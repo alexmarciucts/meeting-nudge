@@ -1,0 +1,14 @@
+2026-10-19T07:00Z | Daily standup, team | https://meet.google.com/abc-defg-hij
+2026-10-20T07:00Z | Daily standup, team | https://meet.google.com/abc-defg-hij
+2026-10-20T08:00Z | Weekly Borg | https://us02web.zoom.us/j/111?pwd=abc.1&jst=2
+2026-10-20T11:00Z | Sprint demo | https://zoom.us/j/222?pwd=x&jst=2
+2026-10-20T12:00Z | Client call | NONE
+2026-10-21T11:00Z | Daily standup (moved) | https://meet.google.com/abc-defg-hij
+2026-10-23T07:00Z | Daily standup, team | https://meet.google.com/abc-defg-hij
+2026-10-26T08:00Z | Daily standup, team | https://meet.google.com/abc-defg-hij
+2026-10-27T08:00Z | Daily standup, team | https://meet.google.com/abc-defg-hij
+2026-10-28T08:00Z | Daily standup, team | https://meet.google.com/abc-defg-hij
+2026-10-30T13:00Z | Monthly review | https://teams.microsoft.com/l/meetup-join/19%3ameeting_x%40thread.v2/0
+2026-10-31T08:00Z | Three-day workshop | NONE
+2026-11-01T08:00Z | Three-day workshop | NONE
+2026-11-02T08:00Z | Three-day workshop | NONE

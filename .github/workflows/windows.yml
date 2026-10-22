@@ -1,0 +1,33 @@
+# Builds the Windows app exactly like install.ps1 does on a user's PC (Windows PowerShell 5.1 + the
+# built-in C# 5 compiler), then checks its calendar parsing matches the Mac version on a tricky fixture.
+name: windows
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build with the installer
+        shell: powershell
+        env:
+          MEETINGNUDGE_BUILD_ONLY: "1"
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File windows\install.ps1
+
+      - name: Calendar parsing matches the Mac version
+        shell: powershell
+        run: |
+          $exe = Join-Path $env:LOCALAPPDATA 'MeetingNudge\MeetingNudge.exe'
+          $out = Join-Path $pwd 'selftest.txt'
+          $p = Start-Process -FilePath $exe -ArgumentList @('--selftest', "$pwd\windows\test\fixture.ics", '2026-10-19T00:00:00Z', '2026-11-03T00:00:00Z', $out) -Wait -PassThru
+          $actual = Get-Content $out -Encoding UTF8
+          $expected = Get-Content windows\test\expected.txt -Encoding UTF8
+          Write-Host "--- actual ---"; $actual | ForEach-Object { Write-Host $_ }
+          if ($p.ExitCode -ne 0) { throw "selftest exited with $($p.ExitCode)" }
+          $diff = Compare-Object $expected $actual
+          if ($diff) { $diff | Format-Table -AutoSize | Out-String | Write-Host; throw 'Windows parsing differs from the Mac version' }
+          Write-Host 'Matches the Mac version.'
