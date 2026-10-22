@@ -126,6 +126,16 @@ struct SettingsView: View {
         }
     }
 
+    // Looks reminders up by id, not array position: a deleted row's text field may still read its
+    // binding once more, and a position-based binding then crashes with "index out of range".
+    private func reminderBinding(_ id: UUID) -> Binding<CustomReminder> {
+        Binding(
+            get: { store.s.reminders.first { $0.id == id } ?? CustomReminder(id: id) },
+            set: { new in
+                if let i = store.s.reminders.firstIndex(where: { $0.id == id }) { store.s.reminders[i] = new }
+            })
+    }
+
     private func saveLink() {
         let link = linkDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard link.hasPrefix("https://calendar.google.com/calendar/ical/"), link.hasSuffix(".ics") else {
@@ -206,8 +216,8 @@ struct SettingsView: View {
                     Text("Nothing yet — add things like \"Stand up & stretch\" or \"Send timesheet\".")
                         .foregroundStyle(.secondary)
                 }
-                ForEach($store.s.reminders) { $r in
-                    ReminderRow(r: $r) { store.s.reminders.removeAll { $0.id == r.id } }
+                ForEach(store.s.reminders) { r in
+                    ReminderRow(r: reminderBinding(r.id)) { store.s.reminders.removeAll { $0.id == r.id } }
                 }
                 Button {
                     let start = Calendar.current.date(byAdding: .minute, value: 30, to: Date())!
