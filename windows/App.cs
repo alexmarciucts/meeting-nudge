@@ -110,12 +110,14 @@ namespace MeetingNudge
         public int SnoozeMinutes { get; set; }
         public List<Reminder> Reminders { get; set; }
         public bool LoginConfigured { get; set; }
+        public string Sound { get; set; }  // a .wav name from C:\Windows\Media, or "None"
 
         public AppSettings()
         {
             MeetingAlertsOn = true;
             LeadMinutes = new List<int> { 5 };
             SnoozeMinutes = 1;
+            Sound = "Alarm01";
             Reminders = new List<Reminder>();
         }
 
@@ -208,6 +210,35 @@ namespace MeetingNudge
         }
     }
 
+    public static class Sounds
+    {
+        public const string None = "None";
+        static readonly string MediaDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Media");
+        static SoundPlayer player;
+
+        /// "None" plus the .wav files that ship with Windows.
+        public static List<string> Available()
+        {
+            var names = new List<string> { None };
+            try { names.AddRange(Directory.GetFiles(MediaDir, "*.wav").Select(f => Path.GetFileNameWithoutExtension(f)).OrderBy(n => n)); }
+            catch (Exception) { }
+            return names;
+        }
+
+        public static void Play(string name)
+        {
+            if (name == None) return;
+            var path = Path.Combine(MediaDir, (name ?? "Alarm01") + ".wav");
+            try
+            {
+                if (player != null) player.Stop();
+                if (File.Exists(path)) { player = new SoundPlayer(path); player.Play(); return; }
+            }
+            catch (Exception ex) { Log.Write("sound failed: " + ex.Message); }
+            SystemSounds.Exclamation.Play();
+        }
+    }
+
     public static class Startup
     {
         const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
@@ -261,12 +292,7 @@ namespace MeetingNudge
             tickTimer.Tick += delegate { Tick(); };
         }
 
-        static void PlaySound()
-        {
-            var alarm = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), @"Media\Alarm01.wav");
-            try { if (File.Exists(alarm)) { new SoundPlayer(alarm).Play(); return; } } catch (Exception) { }
-            SystemSounds.Exclamation.Play();
-        }
+        static void PlaySound() { Sounds.Play(AppSettings.Current.Sound); }
 
         string Headline()
         {
@@ -637,11 +663,25 @@ namespace MeetingNudge
             };
             var snooze = new NumericUpDown { Minimum = 1, Maximum = 30, Value = Math.Max(1, Math.Min(30, s.SnoozeMinutes)), Width = 60 };
             snooze.ValueChanged += delegate { s.SnoozeMinutes = (int)snooze.Value; s.Save(); };
+            var sound = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 220 };
+            var soundNames = Sounds.Available();
+            foreach (var n in soundNames) sound.Items.Add(n);
+            int current = soundNames.IndexOf(s.Sound ?? "Alarm01");
+            sound.SelectedIndex = current >= 0 ? current : 0;
+            var preview = new Button { Text = "Preview", AutoSize = true, Enabled = (string)sound.SelectedItem != Sounds.None };
+            sound.SelectedIndexChanged += delegate
+            {
+                s.Sound = (string)sound.SelectedItem; s.Save();
+                preview.Enabled = s.Sound != Sounds.None;
+                Sounds.Play(s.Sound);
+            };
+            preview.Click += delegate { Sounds.Play(s.Sound); };
             var meeting = Column(
                 alertsOn,
                 Row(leads, Column(removeLead)),
                 Row(newLead, Text_("min before"), addLead),
-                Row(Text_("Snooze length"), snooze, Text_("min")));
+                Row(Text_("Snooze length"), snooze, Text_("min")),
+                Row(Text_("Alert sound"), sound, preview));
 
             // --- My reminders ---
             reminders.Columns.Add("On", 40); reminders.Columns.Add("Reminder", 230); reminders.Columns.Add("Repeat", 100); reminders.Columns.Add("Next", 170);

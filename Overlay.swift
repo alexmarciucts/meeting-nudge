@@ -61,7 +61,7 @@ final class OverlayController {
         }
         NSApp.activate(ignoringOtherApps: true)
         windows.first?.makeKey()
-        NSSound(named: "Sosumi")?.play()
+        playAlertSound()
 
         flashTimer = Timer.scheduledTimer(withTimeInterval: 0.6, repeats: true) { [weak self] _ in self?.flash() }
         tickTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.tick() }
@@ -108,7 +108,7 @@ final class OverlayController {
         countdownLabels.forEach { $0.stringValue = text }
         headlineLabels.forEach { $0.stringValue = head }
         // Re-ding every 30s so it can't fade into the background.
-        if secs % 30 == 0 { NSSound(named: "Sosumi")?.play() }
+        if secs % 30 == 0 { playAlertSound() }
     }
 
     private func label(_ text: String, size: CGFloat, weight: NSFont.Weight) -> NSTextField {

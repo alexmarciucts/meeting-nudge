@@ -60,6 +60,7 @@ struct AppSettings: Codable {
     var snoozeMinutes = 1
     var reminders: [CustomReminder] = []
     var loginItemConfigured = false  // first launch turns "Open at login" on once
+    var soundName = "Sosumi"  // a macOS system sound, or "None"
 
     init() {}
 
@@ -72,6 +73,7 @@ struct AppSettings: Codable {
         snoozeMinutes = try c.decodeIfPresent(Int.self, forKey: .snoozeMinutes) ?? d.snoozeMinutes
         reminders = try c.decodeIfPresent([CustomReminder].self, forKey: .reminders) ?? d.reminders
         loginItemConfigured = try c.decodeIfPresent(Bool.self, forKey: .loginItemConfigured) ?? d.loginItemConfigured
+        soundName = try c.decodeIfPresent(String.self, forKey: .soundName) ?? d.soundName
     }
 }
 
@@ -190,6 +192,13 @@ struct SettingsView: View {
                     }
                 }
                 Stepper("Snooze length: \(store.s.snoozeMinutes) min", value: $store.s.snoozeMinutes, in: 1...30)
+                HStack {
+                    Picker("Alert sound", selection: $store.s.soundName) {
+                        ForEach(alertSoundNames(), id: \.self) { Text($0).tag($0) }
+                    }
+                    Button("Preview") { playAlertSound() }
+                        .disabled(store.s.soundName == NO_SOUND)
+                }
             }
 
             Section("My reminders") {
@@ -263,4 +272,30 @@ func setOpenAtLogin(_ on: Bool) {
     } catch {
         log("open at login \(on ? "register" : "unregister") failed: \(error.localizedDescription)")
     }
+}
+
+// MARK: - Alert sound
+
+let NO_SOUND = "None"
+
+/// "None" plus the system sounds (and any the user added to ~/Library/Sounds).
+func alertSoundNames() -> [String] {
+    let dirs = ["/System/Library/Sounds", NSHomeDirectory() + "/Library/Sounds"]
+    var names = Set<String>()
+    for dir in dirs {
+        for f in (try? FileManager.default.contentsOfDirectory(atPath: dir)) ?? [] {
+            names.insert((f as NSString).deletingPathExtension)
+        }
+    }
+    return [NO_SOUND] + names.sorted()
+}
+
+private var currentSound: NSSound?
+
+func playAlertSound() {
+    let name = SettingsStore.shared.s.soundName
+    guard name != NO_SOUND else { return }
+    currentSound?.stop()
+    currentSound = NSSound(named: name) ?? NSSound(named: "Sosumi")
+    currentSound?.play()
 }
