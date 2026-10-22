@@ -2,3 +2,4 @@ ical-url.txt
 settings.json
 *.log
 *.ics
+!windows/test/fixture.ics
